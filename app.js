@@ -24,7 +24,7 @@ const generateAccessToken = (_id) => {
   return jwt.sign({ _id }, secretKey);
 };
 
-const SERVER_URL = "http://localhost:4000";
+const SERVER_URL = process.env.SERVER_URL;
 
 function formatUser(user) {
   return {
