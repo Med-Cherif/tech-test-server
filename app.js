@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const UserModel = require("./models/User");
 const upload = require("./upload");
+const { generateAppointments } = require("./fakeData");
+const AppointmentModel = require("./models/Appointment");
 
 const app = express();
 
@@ -58,6 +60,66 @@ function checkAuth(req, res, next) {
     return res.status(401).json({ message: "Unauthorized - Token is invalid" });
   }
 }
+
+app.get("/reset-appointment", async (req, res) => {
+  try {
+    await AppointmentModel.deleteMany();
+    const data = await generateAppointments();
+    const list = await AppointmentModel.insertMany(data);
+    res.json({
+      data: list,
+    });
+  } catch (error) {
+    res.sendStatus(500);
+  }
+});
+
+app.get("/appointment", async (req, res) => {
+  try {
+    const data = await AppointmentModel.find({
+      status: "pending",
+    }).sort({ date: 1 });
+    // const data = await AppointmentModel.aggregate([
+    //   {
+    //     $group: {
+    //       _id: "$date",
+    //       appointments: { $push: "$$ROOT" },
+    //     },
+    //   },
+    //   {
+    //     $sort: {
+    //       _id: 1,
+    //     },
+    //   },
+    // ]);
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+});
+
+app.post("/appointment/:id", async (req, res) => {
+  try {
+    const { body, params } = req;
+    const { status } = body;
+    const { id } = params;
+    const item = await AppointmentModel.findByIdAndUpdate(
+      id,
+      { $set: { status } },
+      { new: true }
+    );
+    res.status(200).json({
+      success: true,
+      data: item,
+    });
+  } catch (error) {
+    res.sendStatus(500);
+  }
+});
 
 app.post("/register", async (req, res) => {
   try {
@@ -161,6 +223,7 @@ app.post(
         data: formatUser(user),
       });
     } catch (error) {
+      // console.log(error);
       res.sendStatus(500);
     }
   }
